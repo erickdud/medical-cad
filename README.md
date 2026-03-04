@@ -61,8 +61,8 @@ O projeto é projetado para ser executado com Docker, garantindo consistência e
 
 1.  **Clone o repositório:**
     ```bash
-    git clone https://github.com/KaioHerculano/Medical_Appointment_Scheduling_API.git
-    cd Medical_Appointment_Scheduling_API
+    git clone https://github.com/Erickdud/medical-cad.git
+    cd medical-cad
     ```
 
 2.  **Configure o Ambiente:**
@@ -120,10 +120,7 @@ Este projeto utiliza **GitHub Actions** para automatizar o processo de integraç
 
 Para um registro detalhado dos erros encontrados, decisões tomadas e melhorias propostas durante o desenvolvimento deste projeto, consulte o arquivo [CHALLENGE_LOG.md](CHALLENGE_LOG.md). (Sugestão: crie este arquivo para documentar sua jornada).
 
-## 📜 Licença
-
-Este projeto está licenciado sob a Licença MIT.
 
 ## 👨‍💻 Autor
 
-- **Kaio Herculano** - [kaioherculano12@gmail.com](mailto:kaioherculano12@gmail.com)
+- **Erick Eduardo** - [erickdudu12@hotmail.com](mailto:erickdudu12@hotmail.com)
