@@ -34,4 +34,4 @@ class Consultation(models.Model):
         verbose_name_plural = "Consultas"
 
     def __str__(self):
-        return f"{self.patient_name} com {self.doctor.name} em {self.date.strftime('%d/%m/%Y %H:%M')}"
+        return f"{self.patient_name} com {self.doctor.name} em {self.start_datetime.('%d/%m/%Y %H:%M')}"
