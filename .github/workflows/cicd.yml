@@ -1,0 +1,103 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [dev, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: ${{ github.ref_name == 'main' && secrets.POSTGRES_DB_PROD || secrets.POSTGRES_DB_DEV }}
+          POSTGRES_USER: ${{ github.ref_name == 'main' && secrets.POSTGRES_USER_PROD || secrets.POSTGRES_USER_DEV }}
+          POSTGRES_PASSWORD: ${{ github.ref_name == 'main' && secrets.POSTGRES_PASSWORD_PROD || secrets.POSTGRES_PASSWORD_DEV }}
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: v1-poetry-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            v1-poetry-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.2
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
+
+      # --- LINTING ---
+      - name: Run flake8
+        run: poetry run flake8 app/ authentication/ consultations/ doctors/
+
+      - name: Run black
+        run: poetry run black --check .
+
+      - name: Run isort
+        run: poetry run isort --check-only .
+
+      # --- TESTES ---
+      - name: Wait for PostgreSQL
+        run: sleep 15
+
+      - name: Run tests
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DEBUG: ${{ github.ref_name != 'main' }}
+          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+          POSTGRES_DB: ${{ github.ref_name == 'main' && secrets.POSTGRES_DB_PROD || secrets.POSTGRES_DB_DEV }}
+          POSTGRES_USER: ${{ github.ref_name == 'main' && secrets.POSTGRES_USER_PROD || secrets.POSTGRES_USER_DEV }}
+          POSTGRES_PASSWORD: ${{ github.ref_name == 'main' && secrets.POSTGRES_PASSWORD_PROD || secrets.POSTGRES_PASSWORD_DEV }}
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+        run: poetry run python manage.py test
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          # Alterado para usar SSH_HOST_PROD para 'main' e SSH_HOST para 'dev'
+          host: ${{ github.ref_name == 'main' && secrets.SSH_HOST_PROD || secrets.SSH_HOST }}
+          # Alterado para usar SSH_USER_PROD para 'main' e SSH_USER para 'dev'
+          username: ${{ github.ref_name == 'main' && secrets.SSH_USER_PROD || secrets.SSH_USER }}
+          key: ${{ github.ref_name == 'main' && secrets.SSH_PRIVATE_KEY_MAIN || secrets.SSH_KEY }}
+          script: |
+            cd medical-cad
+            git pull origin ${{ github.ref_name }}
+            
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              docker-compose -f docker-compose.prod.yml up --build -d --remove-orphans
+            else
+              docker-compose -f docker-compose.yml up --build -d --remove-orphans
+            fi
