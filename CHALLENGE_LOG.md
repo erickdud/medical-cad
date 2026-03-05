@@ -52,8 +52,7 @@ Este documento detalha a evolução do desenvolvimento da API de Agendamento e C
 
 ### 🗓️ Dia 3 - CI/CD e Documentação
 
-- Estrutura inicial de pipeline com GitHub Actions criada para:  
-  - `Lint` (flake8, black, isort)  
+- Estrutura inicial de pipeline com GitHub Actions criada para:   
   - `Test` (testes automatizados Django)  
   - `Build` da imagem Docker  
   - `Deploy` automático para ambientes de desenvolvimento e produção (dev e main)
